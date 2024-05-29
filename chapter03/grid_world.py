@@ -155,6 +155,7 @@ def figure_3_2_linear_system():
             index_s = np.ravel_multi_index(s, (WORLD_SIZE, WORLD_SIZE))
             for a in ACTIONS:
                 s_, r = step(s, a)
+                # np.ravel_multi_index flatten high-dimensional index
                 index_s_ = np.ravel_multi_index(s_, (WORLD_SIZE, WORLD_SIZE))
 
                 A[index_s, index_s_] += ACTION_PROB * DISCOUNT
