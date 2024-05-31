@@ -68,8 +68,10 @@ def compute_state_value(in_place=True, discount=1.0):
     iteration = 0
     while True:
         if in_place:
+            # allow state_values get updated in_place by new_state_values
             state_values = new_state_values
         else:
+            # disallow state_values get updated in_place by new_state_values
             state_values = new_state_values.copy()
         old_state_values = state_values.copy()
 
