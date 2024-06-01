@@ -44,12 +44,9 @@ MOVE_CAR_COST = 2
 # all possible actions
 actions = np.arange(-MAX_MOVE_OF_CARS, MAX_MOVE_OF_CARS + 1)
 
-# An up bound for poisson distribution
-# If n is greater than this value, then the probability of getting n is truncated to 0
 POISSON_UPPER_BOUND = 11
 
-# Probability for poisson distribution
-# @lam: lambda should be less than 10 for this function
+# Probability for poisson distribution with lambda < 10
 poisson_cache = dict()
 
 
@@ -60,7 +57,11 @@ def poisson_probability(n, lam):
         poisson_cache[key] = poisson.pmf(n, lam)
     return poisson_cache[key]
 
-
+# calculate expected value of taking given "action" in given "state" over all possible scenario of reward + next_state
+# there are two kinds of dependency working:
+# (1) 时间上，current one always depends on last one
+# (2) 各个states 之间，我取决于你，你也取决于我，彼此构成 system of equations.
+# in practice, such system of equations are solved iteratively, instead of analytically
 def expected_return(state, action, state_value, constant_returned_cars):
     """
     @state: [# of cars in first location, # of cars in second location]
@@ -72,13 +73,12 @@ def expected_return(state, action, state_value, constant_returned_cars):
     rather than a random value from poisson distribution, which will reduce calculation time
     and leave the optimal policy/value state matrix almost the same
     """
-    # initailize total return
+
     returns = 0.0
 
     # cost for moving cars
     returns -= MOVE_CAR_COST * abs(action)
 
-    # moving cars
     NUM_OF_CARS_FIRST_LOC = min(state[0] - action, MAX_CARS)
     NUM_OF_CARS_SECOND_LOC = min(state[1] + action, MAX_CARS)
 
@@ -102,7 +102,7 @@ def expected_return(state, action, state_value, constant_returned_cars):
             num_of_cars_second_loc -= valid_rental_second_loc
 
             if constant_returned_cars:
-                # get returned cars, those cars can be used for renting tomorrow
+                # get returned cars, which are available for renting tomorrow
                 returned_cars_first_loc = RETURNS_FIRST_LOC
                 returned_cars_second_loc = RETURNS_SECOND_LOC
                 num_of_cars_first_loc = min(num_of_cars_first_loc + returned_cars_first_loc, MAX_CARS)
@@ -112,7 +112,8 @@ def expected_return(state, action, state_value, constant_returned_cars):
                 for returned_cars_first_loc in range(POISSON_UPPER_BOUND):
                     for returned_cars_second_loc in range(POISSON_UPPER_BOUND):
                         prob_return = poisson_probability(
-                            returned_cars_first_loc, RETURNS_FIRST_LOC) * poisson_probability(returned_cars_second_loc, RETURNS_SECOND_LOC)
+                            returned_cars_first_loc, RETURNS_FIRST_LOC) * poisson_probability(returned_cars_second_loc,
+                                                                                              RETURNS_SECOND_LOC)
                         num_of_cars_first_loc_ = min(num_of_cars_first_loc + returned_cars_first_loc, MAX_CARS)
                         num_of_cars_second_loc_ = min(num_of_cars_second_loc + returned_cars_second_loc, MAX_CARS)
                         prob_ = prob_return * prob
@@ -122,6 +123,7 @@ def expected_return(state, action, state_value, constant_returned_cars):
 
 
 def figure_4_2(constant_returned_cars=True):
+    # initialize state_value and policy
     value = np.zeros((MAX_CARS + 1, MAX_CARS + 1))
     policy = np.zeros(value.shape, dtype=int)
 
@@ -129,6 +131,14 @@ def figure_4_2(constant_returned_cars=True):
     _, axes = plt.subplots(2, 3, figsize=(40, 20))
     plt.subplots_adjust(wspace=0.1, hspace=0.2)
     axes = axes.flatten()
+    """
+    Reason for below nested "while True" structure.
+    Recall the lesson learned from data structure: to construct something having two properties simultaneously, 
+    (for this case, convergence on state value and convergence on policy), we have to maintain the 1st property during 
+    the process of making it satisfying the 2nd property. 
+    Policy Iteration by this nested "while True" is computationally heavy, so it is where Valuation Iteration (only 
+    one sweep of state value over state space without convergence at all) comes into play.
+    """
     while True:
         fig = sns.heatmap(np.flipud(policy), cmap="YlGnBu", ax=axes[iterations])
         fig.set_ylabel('# cars at first location', fontsize=30)
@@ -136,8 +146,9 @@ def figure_4_2(constant_returned_cars=True):
         fig.set_xlabel('# cars at second location', fontsize=30)
         fig.set_title('policy {}'.format(iterations), fontsize=30)
 
-        # policy evaluation (in-place)
+        # policy evaluation (in-place): many rounds of sweeps until state value convergence
         while True:
+            # one sweep of state value update over state space
             old_value = value.copy()
             for i in range(MAX_CARS + 1):
                 for j in range(MAX_CARS + 1):
@@ -149,11 +160,14 @@ def figure_4_2(constant_returned_cars=True):
                 break
 
         # policy improvement
+        # since "action" only makes sense in the context of "state", we have to iterate state space first before action
+        # note state value here already reached convergence thanks to previous policy evaluation part
         policy_stable = True
         for i in range(MAX_CARS + 1):
             for j in range(MAX_CARS + 1):
                 old_action = policy[i, j]
                 action_returns = []
+                # iterate over action space to find the best action which carries the best expected_return
                 for action in actions:
                     if (0 <= action <= i) or (-j <= action <= 0):
                         action_returns.append(expected_return([i, j], action, value, constant_returned_cars))
