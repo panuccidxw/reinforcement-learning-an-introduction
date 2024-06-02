@@ -136,8 +136,9 @@ def figure_4_2(constant_returned_cars=True):
     Recall the lesson learned from data structure: to construct something having two properties simultaneously, 
     (for this case, convergence on state value and convergence on policy), we have to maintain the 1st property during 
     the process of making it satisfying the 2nd property. 
-    Policy Iteration by this nested "while True" is computationally heavy, so it is where Valuation Iteration (only 
-    one sweep of state value over state space without convergence at all) comes into play.
+    Policy Iteration by this nested "while True" is computationally heavy, so it is where Valuation Iteration comes into
+    play. In value iteration, only one time policy evaluation convergence is needed since no convergence for policy is
+    required.
     """
     while True:
         fig = sns.heatmap(np.flipud(policy), cmap="YlGnBu", ax=axes[iterations])
