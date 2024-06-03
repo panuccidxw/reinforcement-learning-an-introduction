@@ -107,6 +107,7 @@ def expected_return(state, action, state_value, constant_returned_cars):
                 returned_cars_second_loc = RETURNS_SECOND_LOC
                 num_of_cars_first_loc = min(num_of_cars_first_loc + returned_cars_first_loc, MAX_CARS)
                 num_of_cars_second_loc = min(num_of_cars_second_loc + returned_cars_second_loc, MAX_CARS)
+                # this way taking average is memory efficient
                 returns += prob * (reward + DISCOUNT * state_value[num_of_cars_first_loc, num_of_cars_second_loc])
             else:
                 for returned_cars_first_loc in range(POISSON_UPPER_BOUND):
@@ -149,7 +150,7 @@ def figure_4_2(constant_returned_cars=True):
 
         # policy evaluation (in-place): many rounds of sweeps until state value convergence
         while True:
-            # one sweep of state value update over state space
+            # sweep of state value update over state space
             old_value = value.copy()
             for i in range(MAX_CARS + 1):
                 for j in range(MAX_CARS + 1):
@@ -161,8 +162,9 @@ def figure_4_2(constant_returned_cars=True):
                 break
 
         # policy improvement
-        # since "action" only makes sense in the context of "state", we have to iterate state space first before action
-        # note state value here already reached convergence thanks to previous policy evaluation part
+        # since "action" only makes sense in the context of "state", we have to iterate state space outer and
+        # iterate action space inner
+        # note state value here already reached convergence thanks to outer policy evaluation part
         policy_stable = True
         for i in range(MAX_CARS + 1):
             for j in range(MAX_CARS + 1):

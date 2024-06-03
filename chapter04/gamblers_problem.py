@@ -25,11 +25,16 @@ def figure_4_3():
     # state value
     state_value = np.zeros(GOAL + 1)
     state_value[GOAL] = 1.0
-
+    policy = np.zeros(GOAL + 1)
     sweeps_history = []
 
-    # value iteration is a special / simplified policy iteration in that it doesn't require convergence of policy, and
-    # consequently only one time policy evaluation convergence is ok
+    """
+    policy iteration vs value iteration:
+    policy iteration waits for convergence of evaluation, which may takes many sweeps of state space update, 
+    and requires convergence of policy.
+    value iteration just perform one sweep of state space update, before finding best action for this round. There will
+    be multiple rounds until convergence of state value, and best action for such round is optimal policy. 
+    """
     while True:
         old_state_value = state_value.copy()
         sweeps_history.append(old_state_value)
@@ -39,7 +44,7 @@ def figure_4_3():
             # 若目前有70块，不应该压超过30块，因为只需要30块就能赢。多压反而浪费掉，万一这局输了，后面反攻的机会。
             actions = np.arange(min(state, GOAL - state) + 1)
             action_returns = []
-            # iterate over action space and select the action that carries the largest next state_value
+            # iterate over action space and select the action that leads the largest next state_value
             for action in actions:
                 action_returns.append(
                     HEAD_PROB * state_value[state + action] + (1 - HEAD_PROB) * state_value[state - action])
@@ -50,18 +55,15 @@ def figure_4_3():
             sweeps_history.append(state_value)
             break
 
-    # compute the optimal policy
-    policy = np.zeros(GOAL + 1)
-    for state in STATES[1:GOAL]:
-        actions = np.arange(min(state, GOAL - state) + 1)
-        action_returns = []
-        for action in actions:
-            action_returns.append(
-                HEAD_PROB * state_value[state + action] + (1 - HEAD_PROB) * state_value[state - action])
+        # compute the optimal policy
+        for state in STATES[1:GOAL]:
+            actions = np.arange(min(state, GOAL - state) + 1)
+            action_returns = []
+            for action in actions:
+                action_returns.append(
+                    HEAD_PROB * state_value[state + action] + (1 - HEAD_PROB) * state_value[state - action])
 
-        # round to resemble the figure in the book, see
-        # https://github.com/ShangtongZhang/reinforcement-learning-an-introduction/issues/83
-        policy[state] = actions[np.argmax(np.round(action_returns[1:], 5)) + 1]
+            policy[state] = actions[np.argmax(np.round(action_returns[1:], 6)) + 1]
 
     plt.figure(figsize=(10, 20))
 

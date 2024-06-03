@@ -7,9 +7,7 @@
 # declaration at the top                                              #
 #######################################################################
 
-# This file is contributed by Tahsincan Köse which implements a synchronous policy evaluation, while the car_rental.py
-# implements an asynchronous policy evaluation. This file also utilizes multi-processing for acceleration and contains
-# an answer to Exercise 4.5
+
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -55,7 +53,7 @@ class PolicyIteration:
         self.actions = np.arange(-MAX_MOVE, MAX_MOVE + 1)
         self.inverse_actions = {el: ind[0] for ind, el in np.ndenumerate(self.actions)}
         self.values = np.zeros((MAX_CARS + 1, MAX_CARS + 1))
-        self.policy = np.zeros(self.values.shape, dtype=np.int)
+        self.policy = np.zeros(self.values.shape, dtype=int)
         self.delta = delta
         self.gamma = gamma
         self.solve_extension = solve_4_5
